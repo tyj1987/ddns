@@ -1,6 +1,6 @@
+use crate::error::{AppError, Result};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use crate::error::{AppError, Result};
 
 /// DNS 记录类型
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -135,18 +135,34 @@ pub trait DNSProvider: Send + Sync {
     async fn list_records(&self, domain: &str) -> Result<Vec<DNSRecord>>;
 
     /// 获取特定的 DNS 记录
-    async fn get_record(&self, domain: &str, record_name: &str, record_type: DNSRecordType) -> Result<Option<DNSRecord>> {
+    async fn get_record(
+        &self,
+        domain: &str,
+        record_name: &str,
+        record_type: DNSRecordType,
+    ) -> Result<Option<DNSRecord>> {
         let records = self.list_records(domain).await?;
-        Ok(records.into_iter().find(|r| {
-            r.name == record_name && r.record_type == record_type
-        }))
+        Ok(records
+            .into_iter()
+            .find(|r| r.name == record_name && r.record_type == record_type))
     }
 
     /// 更新 DNS 记录
-    async fn update_record(&self, domain: &str, record_id: &str, new_content: &str) -> Result<UpdateResult>;
+    async fn update_record(
+        &self,
+        domain: &str,
+        record_id: &str,
+        new_content: &str,
+    ) -> Result<UpdateResult>;
 
     /// 创建新的 DNS 记录
-    async fn create_record(&self, domain: &str, record_name: &str, record_type: DNSRecordType, content: &str) -> Result<DNSRecord>;
+    async fn create_record(
+        &self,
+        domain: &str,
+        record_name: &str,
+        record_type: DNSRecordType,
+        content: &str,
+    ) -> Result<DNSRecord>;
 
     /// 删除 DNS 记录
     async fn delete_record(&self, domain: &str, record_id: &str) -> Result<()>;
@@ -167,7 +183,9 @@ impl ProviderFactory {
     /// 根据提供商 ID 创建提供商实例
     pub fn create(provider_id: &str) -> Result<Box<dyn DNSProvider>> {
         match provider_id {
-            "cloudflare" => Ok(Box::new(crate::providers::cloudflare::CloudflareProvider::new())),
+            "cloudflare" => Ok(Box::new(
+                crate::providers::cloudflare::CloudflareProvider::new(),
+            )),
             "aliyun" => Ok(Box::new(crate::providers::aliyun::AliyunProvider::new())),
             "tencent" => Ok(Box::new(crate::providers::tencent::TencentProvider::new())),
             "aws" => Ok(Box::new(crate::providers::aws::AwsProvider::new())),

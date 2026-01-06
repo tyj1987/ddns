@@ -31,7 +31,9 @@ impl MemoryCredentialStore {
 
 impl SecureCredentialStore for MemoryCredentialStore {
     fn store_credentials(&self, provider_id: &str, credentials: &Credentials) -> Result<()> {
-        let mut creds = self.credentials.lock()
+        let mut creds = self
+            .credentials
+            .lock()
             .map_err(|e| AppError::CredentialStore(format!("锁定失败: {}", e)))?;
 
         creds.insert(provider_id.to_string(), credentials.clone());
@@ -40,14 +42,18 @@ impl SecureCredentialStore for MemoryCredentialStore {
     }
 
     fn get_credentials(&self, provider_id: &str) -> Result<Option<Credentials>> {
-        let creds = self.credentials.lock()
+        let creds = self
+            .credentials
+            .lock()
             .map_err(|e| AppError::CredentialStore(format!("锁定失败: {}", e)))?;
 
         Ok(creds.get(provider_id).cloned())
     }
 
     fn delete_credentials(&self, provider_id: &str) -> Result<()> {
-        let mut creds = self.credentials.lock()
+        let mut creds = self
+            .credentials
+            .lock()
             .map_err(|e| AppError::CredentialStore(format!("锁定失败: {}", e)))?;
 
         creds.remove(provider_id);
@@ -56,7 +62,9 @@ impl SecureCredentialStore for MemoryCredentialStore {
     }
 
     fn list_providers(&self) -> Result<Vec<String>> {
-        let creds = self.credentials.lock()
+        let creds = self
+            .credentials
+            .lock()
             .map_err(|e| AppError::CredentialStore(format!("锁定失败: {}", e)))?;
 
         Ok(creds.keys().cloned().collect())
@@ -100,14 +108,23 @@ impl CredentialManager {
     }
 
     /// 为域名获取凭证 (提供商 ID + 域名 ID 组合)
-    pub fn get_credentials_for_domain(&self, provider_id: &str, domain_id: &str) -> Result<Option<Credentials>> {
+    pub fn get_credentials_for_domain(
+        &self,
+        provider_id: &str,
+        domain_id: &str,
+    ) -> Result<Option<Credentials>> {
         // 使用 provider_id@domain_id 作为唯一键
         let key = format!("{}@{}", provider_id, domain_id);
         self.store.get_credentials(&key)
     }
 
     /// 为域名存储凭证
-    pub fn store_credentials_for_domain(&self, provider_id: &str, domain_id: &str, credentials: &Credentials) -> Result<()> {
+    pub fn store_credentials_for_domain(
+        &self,
+        provider_id: &str,
+        domain_id: &str,
+        credentials: &Credentials,
+    ) -> Result<()> {
         let key = format!("{}@{}", provider_id, domain_id);
         self.store.store_credentials(&key, credentials)
     }
@@ -116,7 +133,7 @@ impl CredentialManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{ProviderType};
+    use crate::models::ProviderType;
 
     #[test]
     fn test_memory_store() {

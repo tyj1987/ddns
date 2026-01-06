@@ -1,9 +1,9 @@
 use crate::error::{AppError, Result};
 use crate::models::IPInfo;
 use async_trait::async_trait;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use std::sync::Arc;
 
 /// IP 检测方法 trait
 #[async_trait]
@@ -51,10 +51,7 @@ impl IPDetectionMethod for ApiDetectionMethod {
 
     async fn detect_ipv6(&self) -> Result<Option<String>> {
         // IPv6 专用 API
-        let apis = vec![
-            "https://api64.ipify.org",
-            "https://ifconfig.me/ip",
-        ];
+        let apis = vec!["https://api64.ipify.org", "https://ifconfig.me/ip"];
 
         for url in apis {
             match Self::fetch_ip_from_url(url).await {
@@ -82,14 +79,18 @@ impl ApiDetectionMethod {
             .build()
             .map_err(|e| AppError::IPDetection(format!("创建 HTTP 客户端失败: {}", e)))?;
 
-        let response = client.get(url)
+        let response = client
+            .get(url)
             .header("User-Agent", "DDNS-Tool/1.0")
             .send()
             .await
             .map_err(|e| AppError::IPDetection(format!("请求失败: {}", e)))?;
 
         if !response.status().is_success() {
-            return Err(AppError::IPDetection(format!("HTTP 错误: {}", response.status())));
+            return Err(AppError::IPDetection(format!(
+                "HTTP 错误: {}",
+                response.status()
+            )));
         }
 
         let ip = response
@@ -137,13 +138,11 @@ impl IPDetectionMethod for DnsDetectionMethod {
 impl DnsDetectionMethod {
     async fn resolve_dns(&self, hostname: &str, record_type: &str) -> Result<String> {
         // 使用 trust-dns 客户端
-        use trust_dns_resolver::TokioAsyncResolver;
         use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
+        use trust_dns_resolver::TokioAsyncResolver;
 
-        let resolver = TokioAsyncResolver::tokio(
-            ResolverConfig::default(),
-            ResolverOpts::default(),
-        ).await?;
+        let resolver =
+            TokioAsyncResolver::tokio(ResolverConfig::default(), ResolverOpts::default()).await?;
 
         let response = if record_type == "A" {
             resolver.ipv4_lookup(hostname).await
@@ -159,7 +158,7 @@ impl DnsDetectionMethod {
                     Err(AppError::IPDetection("DNS 解析返回空结果".to_string()))
                 }
             }
-            Err(e) => Err(AppError::IPDetection(format!("DNS 解析失败: {}", e)))
+            Err(e) => Err(AppError::IPDetection(format!("DNS 解析失败: {}", e))),
         }
     }
 }
@@ -291,7 +290,9 @@ impl IPDetectorService {
             }
         }
 
-        Err(AppError::IPDetection("所有 IP 检测方法都失败了".to_string()))
+        Err(AppError::IPDetection(
+            "所有 IP 检测方法都失败了".to_string(),
+        ))
     }
 
     /// 检测 IPv4

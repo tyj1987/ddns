@@ -22,12 +22,10 @@ impl ConfigStore {
     fn get_config_dir() -> Result<PathBuf> {
         let base_dir = if cfg!(target_os = "linux") {
             // Linux: ~/.config/ddns
-            dirs::home_dir()
-                .map(|p| p.join(".config").join("ddns"))
+            dirs::home_dir().map(|p| p.join(".config").join("ddns"))
         } else if cfg!(target_os = "macos") {
             // macOS: ~/Library/Application Support/ddns
-            dirs::home_dir()
-                .map(|p| p.join("Library").join("Application Support").join("ddns"))
+            dirs::home_dir().map(|p| p.join("Library").join("Application Support").join("ddns"))
         } else if cfg!(target_os = "windows") {
             // Windows: %APPDATA%\ddns
             dirs::config_dir().map(|p| p.join("ddns"))
@@ -54,11 +52,9 @@ impl ConfigStore {
             return Ok(None);
         }
 
-        let content = std::fs::read_to_string(&path)
-            .map_err(|e| AppError::Io(e))?;
+        let content = std::fs::read_to_string(&path).map_err(|e| AppError::Io(e))?;
 
-        let config = serde_json::from_str(&content)
-            .map_err(|e| AppError::Serialization(e))?;
+        let config = serde_json::from_str(&content).map_err(|e| AppError::Serialization(e))?;
 
         Ok(Some(config))
     }
@@ -69,11 +65,10 @@ impl ConfigStore {
         T: Serialize,
     {
         let path = self.config_file(name);
-        let content = serde_json::to_string_pretty(config)
-            .map_err(|e| AppError::Serialization(e))?;
+        let content =
+            serde_json::to_string_pretty(config).map_err(|e| AppError::Serialization(e))?;
 
-        std::fs::write(&path, content)
-            .map_err(|e| AppError::Io(e))?;
+        std::fs::write(&path, content).map_err(|e| AppError::Io(e))?;
 
         tracing::info!("保存配置: {}", name);
         Ok(())
@@ -84,8 +79,7 @@ impl ConfigStore {
         let path = self.config_file(name);
 
         if path.exists() {
-            std::fs::remove_file(&path)
-                .map_err(|e| AppError::Io(e))?;
+            std::fs::remove_file(&path).map_err(|e| AppError::Io(e))?;
             tracing::info!("删除配置: {}", name);
         }
 

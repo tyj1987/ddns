@@ -1,6 +1,6 @@
-use crate::models::LogEntry;
 use crate::app_state::AppState;
 use crate::error::Result;
+use crate::models::LogEntry;
 
 /// 获取日志列表
 #[tauri::command]
@@ -18,19 +18,15 @@ pub async fn get_logs(
         _ => None,
     });
 
-    state.db.get_logs(
-        log_level,
-        limit.unwrap_or(100),
-        offset.unwrap_or(0),
-    )
-    .await
-    .map_err(|e| e.to_string())
+    state
+        .db
+        .get_logs(log_level, limit.unwrap_or(100), offset.unwrap_or(0))
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// 清空日志
 #[tauri::command]
 pub async fn clear_logs(state: tauri::State<'_, AppState>) -> Result<(), String> {
-    state.db.clear_logs()
-        .await
-        .map_err(|e| e.to_string())
+    state.db.clear_logs().await.map_err(|e| e.to_string())
 }

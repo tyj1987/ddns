@@ -1,5 +1,7 @@
-use crate::providers::provider_trait::{DNSProvider, DNSRecord, DNSRecordType, UpdateResult, Credentials, ProviderError};
 use crate::error::{AppError, Result};
+use crate::providers::provider_trait::{
+    Credentials, DNSProvider, DNSRecord, DNSRecordType, ProviderError, UpdateResult,
+};
 use async_trait::async_trait;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -83,9 +85,7 @@ impl TencentProvider {
         ];
 
         // 按字典序排序参数
-        let mut sorted_params: Vec<_> = params.iter()
-            .filter(|(_, v)| !v.is_empty())
-            .collect();
+        let mut sorted_params: Vec<_> = params.iter().filter(|(_, v)| !v.is_empty()).collect();
         sorted_params.sort_by(|a, b| a.0.cmp(b.0));
 
         // 构造查询字符串
@@ -103,7 +103,7 @@ impl TencentProvider {
         // 计算签名
         let signature = hmac_sha1(
             format!("{}&", req.secret_key).as_bytes(),
-            string_to_sign.as_bytes()
+            string_to_sign.as_bytes(),
         );
 
         base64_encode(&signature)
@@ -116,7 +116,11 @@ impl TencentProvider {
     }
 
     /// 发送 API 请求
-    async fn send_request(&self, action: &str, params: HashMap<String, String>) -> Result<serde_json::Value> {
+    async fn send_request(
+        &self,
+        action: &str,
+        params: HashMap<String, String>,
+    ) -> Result<serde_json::Value> {
         let mut req = TencentRequest {
             secret_id: self.secret_id.clone().unwrap(),
             secret_key: self.secret_key.clone().unwrap(),
@@ -170,7 +174,8 @@ impl TencentProvider {
 
         let url = format!("https://cns.api.qcloud.com/v2/index.php?{}", query_string);
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .send()
             .await
@@ -184,16 +189,18 @@ impl TencentProvider {
 
             // 检查响应码
             if let Some(code) = json["response"]["Error"]["code"].as_str() {
-                return Err(AppError::Provider(ProviderError::Unknown(
-                    format!("API 错误: {}", code)
-                )));
+                return Err(AppError::Provider(ProviderError::Unknown(format!(
+                    "API 错误: {}",
+                    code
+                ))));
             }
 
             Ok(json["response"].clone())
         } else {
-            Err(AppError::Provider(ProviderError::Unknown(
-                format!("API 请求失败: {}", response.status())
-            )))
+            Err(AppError::Provider(ProviderError::Unknown(format!(
+                "API 请求失败: {}",
+                response.status()
+            ))))
         }
     }
 }
@@ -224,7 +231,7 @@ impl DNSProvider for TencentProvider {
 
         if self.secret_id.is_none() || self.secret_key.is_none() {
             return Err(AppError::Provider(ProviderError::Authentication(
-                "缺少 SecretId 或 SecretKey".to_string()
+                "缺少 SecretId 或 SecretKey".to_string(),
             )));
         }
 
@@ -242,27 +249,34 @@ impl DNSProvider for TencentProvider {
         let response = self.send_request("DescribeRecordList", params).await?;
 
         if let Some(records) = response["recordList"].as_array() {
-            Ok(records.iter().filter_map(|r| {
-                serde_json::from_value(r.clone()).ok()
-            }).map(|r: TencentDNSRecord| DNSRecord {
-                id: r.id,
-                name: r.name,
-                record_type: match r.record_type.as_str() {
-                    "A" => DNSRecordType::A,
-                    "AAAA" => DNSRecordType::AAAA,
-                    "CNAME" => DNSRecordType::CNAME,
-                    _ => DNSRecordType::A,
-                },
-                content: r.value,
-                ttl: Some(r.ttl as i64),
-                proxied: false,
-            }).collect())
+            Ok(records
+                .iter()
+                .filter_map(|r| serde_json::from_value(r.clone()).ok())
+                .map(|r: TencentDNSRecord| DNSRecord {
+                    id: r.id,
+                    name: r.name,
+                    record_type: match r.record_type.as_str() {
+                        "A" => DNSRecordType::A,
+                        "AAAA" => DNSRecordType::AAAA,
+                        "CNAME" => DNSRecordType::CNAME,
+                        _ => DNSRecordType::A,
+                    },
+                    content: r.value,
+                    ttl: Some(r.ttl as i64),
+                    proxied: false,
+                })
+                .collect())
         } else {
             Ok(vec![])
         }
     }
 
-    async fn update_record(&self, _domain: &str, record_id: &str, new_content: &str) -> Result<UpdateResult> {
+    async fn update_record(
+        &self,
+        _domain: &str,
+        record_id: &str,
+        new_content: &str,
+    ) -> Result<UpdateResult> {
         // 先获取记录详情
         let mut params = HashMap::new();
         params.insert("recordId".to_string(), record_id.to_string());
@@ -290,7 +304,13 @@ impl DNSProvider for TencentProvider {
         })
     }
 
-    async fn create_record(&self, domain: &str, record_name: &str, record_type: DNSRecordType, content: &str) -> Result<DNSRecord> {
+    async fn create_record(
+        &self,
+        domain: &str,
+        record_name: &str,
+        record_type: DNSRecordType,
+        content: &str,
+    ) -> Result<DNSRecord> {
         let mut params = HashMap::new();
         params.insert("domain".to_string(), domain.to_string());
         params.insert("subDomain".to_string(), record_name.to_string());
@@ -330,8 +350,8 @@ impl DNSProvider for TencentProvider {
 
 // HMAC-SHA1
 fn hmac_sha1(key: &[u8], data: &[u8]) -> Vec<u8> {
-    use sha1::Sha1;
     use hmac::{Hmac, Mac};
+    use sha1::Sha1;
     type HmacSha1 = Hmac<Sha1>;
 
     let mut mac = HmacSha1::new_from_slice(key).expect("HMAC can take key of any size");

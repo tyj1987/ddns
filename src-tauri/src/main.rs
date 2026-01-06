@@ -1,17 +1,17 @@
 // Prevents additional console window on Windows in release builds
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod models;
-mod storage;
-mod services;
-mod commands;
-mod providers;
-mod error;
 mod app_state;
+mod commands;
+mod error;
+mod models;
+mod providers;
+mod services;
+mod storage;
 
-use storage::Database;
-use services::Logger;
 use app_state::AppState;
+use services::Logger;
+use storage::Database;
 
 #[tokio::main]
 async fn main() {

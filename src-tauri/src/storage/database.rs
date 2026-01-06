@@ -1,6 +1,6 @@
-use sqlx::{SqlitePool, Row};
-use crate::models::{Domain, CreateDomain, UpdateDomain, LogEntry, UpdateHistory, LogLevel};
 use crate::error::{AppError, Result};
+use crate::models::{CreateDomain, Domain, LogEntry, LogLevel, UpdateDomain, UpdateHistory};
+use sqlx::{Row, SqlitePool};
 
 /// 数据库管理器
 pub struct Database {
@@ -44,7 +44,7 @@ impl Database {
                    created_at, updated_at
             FROM domains
             ORDER BY created_at DESC
-            "#
+            "#,
         )
         .fetch_all(&self.pool)
         .await?;
@@ -61,7 +61,7 @@ impl Database {
                    created_at, updated_at
             FROM domains
             WHERE id = ?1
-            "#
+            "#,
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -81,7 +81,7 @@ impl Database {
                                current_ip, update_interval, enabled,
                                created_at, updated_at)
             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
-            "#
+            "#,
         )
         .bind(&domain.id)
         .bind(&domain.name)
@@ -124,7 +124,7 @@ impl Database {
             SET name = ?1, subdomain = ?2, update_interval = ?3,
                 enabled = ?4, updated_at = ?5
             WHERE id = ?6
-            "#
+            "#,
         )
         .bind(&domain.name)
         .bind(&domain.subdomain)
@@ -171,12 +171,17 @@ impl Database {
     // ============ 日志操作 ============
 
     /// 添加日志
-    pub async fn add_log(&self, level: LogLevel, message: String, context: Option<String>) -> Result<()> {
+    pub async fn add_log(
+        &self,
+        level: LogLevel,
+        message: String,
+        context: Option<String>,
+    ) -> Result<()> {
         let now = chrono::Utc::now().timestamp();
         let level_str = format!("{:?}", level).to_lowercase();
 
         sqlx::query(
-            "INSERT INTO logs (level, message, context, timestamp) VALUES (?1, ?2, ?3, ?4)"
+            "INSERT INTO logs (level, message, context, timestamp) VALUES (?1, ?2, ?3, ?4)",
         )
         .bind(level_str)
         .bind(message)
@@ -204,7 +209,7 @@ impl Database {
                 WHERE level = ?1
                 ORDER BY timestamp DESC
                 LIMIT ?2 OFFSET ?3
-                "#
+                "#,
             )
             .bind(level_str)
             .bind(limit)
@@ -216,7 +221,7 @@ impl Database {
                 FROM logs
                 ORDER BY timestamp DESC
                 LIMIT ?1 OFFSET ?2
-                "#
+                "#,
             )
             .bind(limit)
             .bind(offset)
@@ -241,7 +246,7 @@ impl Database {
             r#"
             INSERT INTO update_history (domain_id, old_ip, new_ip, status, error_message, timestamp)
             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
-            "#
+            "#,
         )
         .bind(&history.domain_id)
         .bind(&history.old_ip)
@@ -256,7 +261,11 @@ impl Database {
     }
 
     /// 获取域名的更新历史
-    pub async fn get_domain_history(&self, domain_id: &str, limit: i64) -> Result<Vec<UpdateHistory>> {
+    pub async fn get_domain_history(
+        &self,
+        domain_id: &str,
+        limit: i64,
+    ) -> Result<Vec<UpdateHistory>> {
         let history = sqlx::query_as::<_, UpdateHistory>(
             r#"
             SELECT id, domain_id, old_ip, new_ip, status, error_message, timestamp
@@ -264,7 +273,7 @@ impl Database {
             WHERE domain_id = ?1
             ORDER BY timestamp DESC
             LIMIT ?2
-            "#
+            "#,
         )
         .bind(domain_id)
         .bind(limit)
@@ -289,13 +298,11 @@ impl Database {
 
     /// 设置值
     pub async fn set_setting(&self, key: &str, value: &str) -> Result<()> {
-        sqlx::query(
-            "INSERT OR REPLACE INTO app_settings (key, value) VALUES (?1, ?2)"
-        )
-        .bind(key)
-        .bind(value)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("INSERT OR REPLACE INTO app_settings (key, value) VALUES (?1, ?2)")
+            .bind(key)
+            .bind(value)
+            .execute(&self.pool)
+            .await?;
 
         Ok(())
     }

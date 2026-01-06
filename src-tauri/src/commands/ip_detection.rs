@@ -1,6 +1,6 @@
-use crate::services::IPDetectorService;
-use crate::models::IPInfo;
 use crate::error::Result;
+use crate::models::IPInfo;
+use crate::services::IPDetectorService;
 
 /// 检测当前公网 IP
 #[tauri::command]
@@ -12,7 +12,8 @@ pub async fn detect_ip(method: Option<String>) -> Result<IPInfo, String> {
         Some("ipv6") => detector.detect_ipv6().await,
         Some("all") => detector.detect_all().await,
         _ => detector.detect_ipv4().await,
-    }.map_err(|e| e.to_string())
+    }
+    .map_err(|e| e.to_string())
 }
 
 /// 获取当前缓存的 IP

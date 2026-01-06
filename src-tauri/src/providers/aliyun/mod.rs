@@ -1,5 +1,7 @@
-use crate::providers::provider_trait::{DNSProvider, DNSRecord, DNSRecordType, UpdateResult, Credentials, ProviderError};
 use crate::error::{AppError, Result};
+use crate::providers::provider_trait::{
+    Credentials, DNSProvider, DNSRecord, DNSRecordType, ProviderError, UpdateResult,
+};
 use async_trait::async_trait;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -77,11 +79,20 @@ impl AliyunProvider {
         // 公共参数
         params.insert("Format".to_string(), "JSON".to_string());
         params.insert("Version".to_string(), "2015-01-09".to_string());
-        params.insert("AccessKeyId".to_string(), self.access_key_id.clone().unwrap());
+        params.insert(
+            "AccessKeyId".to_string(),
+            self.access_key_id.clone().unwrap(),
+        );
         params.insert("SignatureMethod".to_string(), "HMAC-SHA1".to_string());
-        params.insert("SignatureNonce".to_string(), uuid::Uuid::new_v4().to_string());
+        params.insert(
+            "SignatureNonce".to_string(),
+            uuid::Uuid::new_v4().to_string(),
+        );
         params.insert("SignatureVersion".to_string(), "1.0".to_string());
-        params.insert("Timestamp".to_string(), chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string());
+        params.insert(
+            "Timestamp".to_string(),
+            chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+        );
 
         // 对参数排序
         let mut sorted_keys: Vec<String> = params.keys().cloned().collect();
@@ -90,12 +101,19 @@ impl AliyunProvider {
         // 构造查询字符串
         let query_string = sorted_keys
             .iter()
-            .map(|k| format!("{}={}", Self::percent_encode(k), Self::percent_encode(&params[k])))
+            .map(|k| {
+                format!(
+                    "{}={}",
+                    Self::percent_encode(k),
+                    Self::percent_encode(&params[k])
+                )
+            })
             .collect::<Vec<String>>()
             .join("&");
 
         // 构造待签名字符串
-        let string_to_sign = format!("{}&{}&{}",
+        let string_to_sign = format!(
+            "{}&{}&{}",
             method,
             Self::percent_encode("https://alidns.aliyuncs.com/"),
             Self::percent_encode(&query_string)
@@ -115,7 +133,11 @@ impl AliyunProvider {
     }
 
     /// 发送 API 请求
-    async fn send_request(&self, action: &str, mut params: HashMap<String, String>) -> Result<serde_json::Value> {
+    async fn send_request(
+        &self,
+        action: &str,
+        mut params: HashMap<String, String>,
+    ) -> Result<serde_json::Value> {
         params.insert("Action".to_string(), action.to_string());
 
         let signature = self.build_signature("GET", &mut params)?;
@@ -129,7 +151,8 @@ impl AliyunProvider {
 
         let url = format!("https://alidns.aliyuncs.com/?{}", query_string);
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .send()
             .await
@@ -143,9 +166,10 @@ impl AliyunProvider {
 
             Ok(json)
         } else {
-            Err(AppError::Provider(ProviderError::Unknown(
-                format!("API 请求失败: {}", response.status())
-            )))
+            Err(AppError::Provider(ProviderError::Unknown(format!(
+                "API 请求失败: {}",
+                response.status()
+            ))))
         }
     }
 }
@@ -179,7 +203,7 @@ impl DNSProvider for AliyunProvider {
 
         if self.access_key_id.is_none() || self.access_key_secret.is_none() {
             return Err(AppError::Provider(ProviderError::Authentication(
-                "缺少 Access Key ID 或 Access Key Secret".to_string()
+                "缺少 Access Key ID 或 Access Key Secret".to_string(),
             )));
         }
 
@@ -195,32 +219,42 @@ impl DNSProvider for AliyunProvider {
         params.insert("DomainName".to_string(), domain.to_string());
 
         let response = self.send_request("DescribeDomain", params).await?;
-        let domain_records: Vec<AliyunDNSRecord> = serde_json::from_value(
-            response["DomainRecords"]["Record"].clone()
-        ).map_err(|e| AppError::Provider(ProviderError::ParseError(e.to_string())))?;
+        let domain_records: Vec<AliyunDNSRecord> =
+            serde_json::from_value(response["DomainRecords"]["Record"].clone())
+                .map_err(|e| AppError::Provider(ProviderError::ParseError(e.to_string())))?;
 
-        Ok(domain_records.into_iter().map(|r| DNSRecord {
-            id: r.record_id,
-            name: r.rr,
-            #[serde(rename = "type")]
-            record_type: match r.record_type.as_str() {
-                "A" => DNSRecordType::A,
-                "AAAA" => DNSRecordType::AAAA,
-                "CNAME" => DNSRecordType::CNAME,
-                _ => DNSRecordType::A,
-            },
-            content: r.value,
-            ttl: Some(r.ttl),
-            proxied: false,
-        }).collect())
+        Ok(domain_records
+            .into_iter()
+            .map(|r| DNSRecord {
+                id: r.record_id,
+                name: r.rr,
+                #[serde(rename = "type")]
+                record_type: match r.record_type.as_str() {
+                    "A" => DNSRecordType::A,
+                    "AAAA" => DNSRecordType::AAAA,
+                    "CNAME" => DNSRecordType::CNAME,
+                    _ => DNSRecordType::A,
+                },
+                content: r.value,
+                ttl: Some(r.ttl),
+                proxied: false,
+            })
+            .collect())
     }
 
-    async fn update_record(&self, _domain: &str, record_id: &str, new_content: &str) -> Result<UpdateResult> {
+    async fn update_record(
+        &self,
+        _domain: &str,
+        record_id: &str,
+        new_content: &str,
+    ) -> Result<UpdateResult> {
         // 先获取记录详情
         let mut params = HashMap::new();
         params.insert("RecordId".to_string(), record_id.to_string());
 
-        let response = self.send_request("DescribeDomainRecordInfo", params).await?;
+        let response = self
+            .send_request("DescribeDomainRecordInfo", params)
+            .await?;
         let record: AliyunDNSRecord = serde_json::from_value(response.clone())
             .map_err(|e| AppError::Provider(ProviderError::ParseError(e.to_string())))?;
 
@@ -242,7 +276,13 @@ impl DNSProvider for AliyunProvider {
         })
     }
 
-    async fn create_record(&self, domain: &str, record_name: &str, record_type: DNSRecordType, content: &str) -> Result<DNSRecord> {
+    async fn create_record(
+        &self,
+        domain: &str,
+        record_name: &str,
+        record_type: DNSRecordType,
+        content: &str,
+    ) -> Result<DNSRecord> {
         let mut params = HashMap::new();
         params.insert("DomainName".to_string(), domain.to_string());
         params.insert("RR".to_string(), record_name.to_string());
@@ -281,8 +321,8 @@ impl DNSProvider for AliyunProvider {
 
 // 简化的 HMAC-SHA1 实现
 fn hmac_sha1(key: &[u8], data: &[u8]) -> Vec<u8> {
-    use sha1::Sha1;
     use hmac::{Hmac, Mac};
+    use sha1::Sha1;
     type HmacSha1 = Hmac<Sha1>;
 
     let mut mac = HmacSha1::new_from_slice(key).expect("HMAC can take key of any size");

@@ -21,7 +21,7 @@ pub struct Domain {
     pub record_type: String, // 存储为字符串,使用 RecordType enum 进行验证
     pub current_ip: Option<String>,
     pub last_updated: Option<i64>, // Unix 时间戳
-    pub update_interval: i64,       // 秒
+    pub update_interval: i64,      // 秒
     pub enabled: bool,
     pub created_at: i64,
     pub updated_at: i64,

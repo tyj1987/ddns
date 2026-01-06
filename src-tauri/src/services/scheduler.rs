@@ -1,9 +1,9 @@
 use crate::error::{AppError, Result};
-use crate::storage::Database;
 use crate::models::Domain;
-use crate::services::{IPDetectorService, DNSUpdaterService};
-use std::sync::Arc;
+use crate::services::{DNSUpdaterService, IPDetectorService};
+use crate::storage::Database;
 use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 
@@ -48,9 +48,7 @@ impl SchedulerService {
 
         // 获取所有启用的域名
         let domains = self.db.get_domains().await?;
-        let enabled_domains: Vec<_> = domains.into_iter()
-            .filter(|d| d.enabled)
-            .collect();
+        let enabled_domains: Vec<_> = domains.into_iter().filter(|d| d.enabled).collect();
 
         // 为每个域名启动调度任务
         for domain in enabled_domains {
@@ -147,17 +145,23 @@ impl SchedulerService {
                 }
 
                 // 更新 DNS
-                tracing::info!("域名 {} IP 变化: {} -> {}, 开始更新 DNS",
-                    domain.name, domain.current_ip.unwrap_or_else(|| "None".to_string()), new_ip);
+                tracing::info!(
+                    "域名 {} IP 变化: {} -> {}, 开始更新 DNS",
+                    domain.name,
+                    domain.current_ip.unwrap_or_else(|| "None".to_string()),
+                    new_ip
+                );
 
                 if let Err(e) = dns_updater.update_domain(&domain, &new_ip).await {
                     tracing::error!("域名 {} DNS 更新失败: {}", domain.name, e);
 
                     // 记录失败历史
-                    let _ = db.add_update_history(crate::models::UpdateHistory::failed(
-                        domain_id.clone(),
-                        e.to_string()
-                    )).await;
+                    let _ = db
+                        .add_update_history(crate::models::UpdateHistory::failed(
+                            domain_id.clone(),
+                            e.to_string(),
+                        ))
+                        .await;
                 } else {
                     tracing::info!("域名 {} DNS 更新成功", domain.name);
 
@@ -166,11 +170,13 @@ impl SchedulerService {
 
                     // 记录成功历史
                     let old_ip = domain.current_ip;
-                    let _ = db.add_update_history(crate::models::UpdateHistory::success(
-                        domain_id.clone(),
-                        old_ip,
-                        new_ip.clone(),
-                    )).await;
+                    let _ = db
+                        .add_update_history(crate::models::UpdateHistory::success(
+                            domain_id.clone(),
+                            old_ip,
+                            new_ip.clone(),
+                        ))
+                        .await;
 
                     // 发送事件到前端
                     // TODO: 实现 Tauri 事件发送

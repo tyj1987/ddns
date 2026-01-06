@@ -1,5 +1,7 @@
-use crate::providers::provider_trait::{DNSProvider, DNSRecord, DNSRecordType, UpdateResult, Credentials, ProviderError};
 use crate::error::{AppError, Result};
+use crate::providers::provider_trait::{
+    Credentials, DNSProvider, DNSRecord, DNSRecordType, ProviderError, UpdateResult,
+};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
@@ -29,13 +31,15 @@ impl CloudflareProvider {
         let url = format!("https://api.cloudflare.com/client/v4/zones?name={}", domain);
 
         let response = if let Some(token) = &self.api_token {
-            self.client.get(&url)
+            self.client
+                .get(&url)
                 .header("Authorization", format!("Bearer {}", token))
                 .header("Content-Type", "application/json")
                 .send()
                 .await
         } else if let (Some(email), Some(key)) = (&self.account_email, &self.api_key) {
-            self.client.get(&url)
+            self.client
+                .get(&url)
                 .header("X-Auth-Email", email)
                 .header("X-Auth-Key", key)
                 .header("Content-Type", "application/json")
@@ -43,7 +47,7 @@ impl CloudflareProvider {
                 .await
         } else {
             return Err(AppError::Provider(ProviderError::AuthenticationFailed(
-                "未设置 API 凭证".to_string()
+                "未设置 API 凭证".to_string(),
             )));
         };
 
@@ -54,9 +58,10 @@ impl CloudflareProvider {
         if !response.status().is_success() {
             let status = response.status();
             let error_text = response.text().await.unwrap_or_default();
-            return Err(AppError::Provider(ProviderError::ApiError(
-                format!("HTTP {}: {}", status, error_text)
-            )));
+            return Err(AppError::Provider(ProviderError::ApiError(format!(
+                "HTTP {}: {}",
+                status, error_text
+            ))));
         }
 
         let zones_response: CloudflareZonesResponse = response.json().await.map_err(|e| {
@@ -65,27 +70,33 @@ impl CloudflareProvider {
 
         if !zones_response.success {
             return Err(AppError::Provider(ProviderError::DomainNotFound(
-                zones_response.errors.first()
+                zones_response
+                    .errors
+                    .first()
                     .map(|e| e.message.clone())
-                    .unwrap_or_else(|| "未知错误".to_string())
+                    .unwrap_or_else(|| "未知错误".to_string()),
             )));
         }
 
-        zones_response.result.first()
+        zones_response
+            .result
+            .first()
             .map(|zone| zone.id.clone())
-            .ok_or_else(|| AppError::Provider(ProviderError::DomainNotFound(
-                "找不到域名".to_string()
-            )))
+            .ok_or_else(|| {
+                AppError::Provider(ProviderError::DomainNotFound("找不到域名".to_string()))
+            })
     }
 
     /// 构建 API 请求
     fn build_request(&self, url: &str) -> reqwest::RequestBuilder {
         if let Some(token) = &self.api_token {
-            self.client.get(url)
+            self.client
+                .get(url)
                 .header("Authorization", format!("Bearer {}", token))
                 .header("Content-Type", "application/json")
         } else if let (Some(email), Some(key)) = (&self.account_email, &self.api_key) {
-            self.client.get(url)
+            self.client
+                .get(url)
                 .header("X-Auth-Email", email)
                 .header("X-Auth-Key", key)
                 .header("Content-Type", "application/json")
@@ -115,12 +126,14 @@ impl DNSProvider for CloudflareProvider {
         // 优先使用 API Token
         if let Some(token) = &credentials.api_key {
             self.api_token = Some(token.clone());
-        } else if let (Some(email), Some(key)) = (&credentials.extra.get("email"), &credentials.api_secret) {
+        } else if let (Some(email), Some(key)) =
+            (&credentials.extra.get("email"), &credentials.api_secret)
+        {
             self.account_email = Some(email.as_str().unwrap_or_default().to_string());
             self.api_key = Some(key.clone());
         } else {
             return Err(AppError::Provider(ProviderError::InvalidConfig(
-                "Cloudflare 需要提供 api_key (API Token) 或者 email + api_secret".to_string()
+                "Cloudflare 需要提供 api_key (API Token) 或者 email + api_secret".to_string(),
             )));
         }
 
@@ -137,17 +150,17 @@ impl DNSProvider for CloudflareProvider {
             zone_id
         );
 
-        let response = self.build_request(&url)
-            .send()
-            .await
-            .map_err(|e| AppError::Provider(ProviderError::NetworkError(format!("请求失败: {}", e))))?;
+        let response = self.build_request(&url).send().await.map_err(|e| {
+            AppError::Provider(ProviderError::NetworkError(format!("请求失败: {}", e)))
+        })?;
 
         if !response.status().is_success() {
             let status = response.status();
             let error_text = response.text().await.unwrap_or_default();
-            return Err(AppError::Provider(ProviderError::ApiError(
-                format!("HTTP {}: {}", status, error_text)
-            )));
+            return Err(AppError::Provider(ProviderError::ApiError(format!(
+                "HTTP {}: {}",
+                status, error_text
+            ))));
         }
 
         let records_response: CloudflareRecordsResponse = response.json().await.map_err(|e| {
@@ -156,33 +169,44 @@ impl DNSProvider for CloudflareProvider {
 
         if !records_response.success {
             return Err(AppError::Provider(ProviderError::ApiError(
-                records_response.errors.first()
+                records_response
+                    .errors
+                    .first()
                     .map(|e| e.message.clone())
-                    .unwrap_or_else(|| "未知错误".to_string())
+                    .unwrap_or_else(|| "未知错误".to_string()),
             )));
         }
 
-        Ok(records_response.result.into_iter().map(|r| DNSRecord {
-            id: r.id,
-            name: r.name,
-            record_type: match r.r#type.as_str() {
-                "A" => DNSRecordType::A,
-                "AAAA" => DNSRecordType::AAAA,
-                "CNAME" => DNSRecordType::CNAME,
-                "MX" => DNSRecordType::MX,
-                "TXT" => DNSRecordType::TXT,
-                "NS" => DNSRecordType::NS,
-                "SOA" => DNSRecordType::SOA,
-                _ => DNSRecordType::A, // 默认值
-            },
-            content: r.content,
-            ttl: r.ttl,
-            proxied: Some(r.proxied),
-            priority: r.priority,
-        }).collect())
+        Ok(records_response
+            .result
+            .into_iter()
+            .map(|r| DNSRecord {
+                id: r.id,
+                name: r.name,
+                record_type: match r.r#type.as_str() {
+                    "A" => DNSRecordType::A,
+                    "AAAA" => DNSRecordType::AAAA,
+                    "CNAME" => DNSRecordType::CNAME,
+                    "MX" => DNSRecordType::MX,
+                    "TXT" => DNSRecordType::TXT,
+                    "NS" => DNSRecordType::NS,
+                    "SOA" => DNSRecordType::SOA,
+                    _ => DNSRecordType::A, // 默认值
+                },
+                content: r.content,
+                ttl: r.ttl,
+                proxied: Some(r.proxied),
+                priority: r.priority,
+            })
+            .collect())
     }
 
-    async fn update_record(&self, domain: &str, record_id: &str, new_content: &str) -> Result<UpdateResult> {
+    async fn update_record(
+        &self,
+        domain: &str,
+        record_id: &str,
+        new_content: &str,
+    ) -> Result<UpdateResult> {
         let zone_id = self.get_zone_id(domain).await?;
         let url = format!(
             "https://api.cloudflare.com/client/v4/zones/{}/dns_records/{}",
@@ -195,14 +219,14 @@ impl DNSProvider for CloudflareProvider {
             zone_id, record_id
         );
 
-        let current_response = self.build_request(&current_url)
-            .send()
-            .await
-            .map_err(|e| AppError::Provider(ProviderError::NetworkError(format!("获取记录失败: {}", e))))?;
-
-        let current_record: CloudflareRecordResponse = current_response.json().await.map_err(|e| {
-            AppError::Provider(ProviderError::ApiError(format!("解析响应失败: {}", e)))
+        let current_response = self.build_request(&current_url).send().await.map_err(|e| {
+            AppError::Provider(ProviderError::NetworkError(format!("获取记录失败: {}", e)))
         })?;
+
+        let current_record: CloudflareRecordResponse =
+            current_response.json().await.map_err(|e| {
+                AppError::Provider(ProviderError::ApiError(format!("解析响应失败: {}", e)))
+            })?;
 
         let old_ip = current_record.result.content.clone();
 
@@ -214,14 +238,16 @@ impl DNSProvider for CloudflareProvider {
         });
 
         let response = if let Some(token) = &self.api_token {
-            self.client.put(&url)
+            self.client
+                .put(&url)
                 .header("Authorization", format!("Bearer {}", token))
                 .header("Content-Type", "application/json")
                 .json(&update_data)
                 .send()
                 .await
         } else if let (Some(email), Some(key)) = (&self.account_email, &self.api_key) {
-            self.client.put(&url)
+            self.client
+                .put(&url)
                 .header("X-Auth-Email", email)
                 .header("X-Auth-Key", key)
                 .header("Content-Type", "application/json")
@@ -230,7 +256,7 @@ impl DNSProvider for CloudflareProvider {
                 .await
         } else {
             return Err(AppError::Provider(ProviderError::AuthenticationFailed(
-                "未设置 API 凭证".to_string()
+                "未设置 API 凭证".to_string(),
             )));
         };
 
@@ -241,9 +267,10 @@ impl DNSProvider for CloudflareProvider {
         if !response.status().is_success() {
             let status = response.status();
             let error_text = response.text().await.unwrap_or_default();
-            return Err(AppError::Provider(ProviderError::ApiError(
-                format!("HTTP {}: {}", status, error_text)
-            )));
+            return Err(AppError::Provider(ProviderError::ApiError(format!(
+                "HTTP {}: {}",
+                status, error_text
+            ))));
         }
 
         let update_response: CloudflareRecordResponse = response.json().await.map_err(|e| {
@@ -259,7 +286,13 @@ impl DNSProvider for CloudflareProvider {
         })
     }
 
-    async fn create_record(&self, domain: &str, record_name: &str, record_type: DNSRecordType, content: &str) -> Result<DNSRecord> {
+    async fn create_record(
+        &self,
+        domain: &str,
+        record_name: &str,
+        record_type: DNSRecordType,
+        content: &str,
+    ) -> Result<DNSRecord> {
         let zone_id = self.get_zone_id(domain).await?;
         let url = format!(
             "https://api.cloudflare.com/client/v4/zones/{}/dns_records",
@@ -275,14 +308,16 @@ impl DNSProvider for CloudflareProvider {
         });
 
         let response = if let Some(token) = &self.api_token {
-            self.client.post(&url)
+            self.client
+                .post(&url)
                 .header("Authorization", format!("Bearer {}", token))
                 .header("Content-Type", "application/json")
                 .json(&create_data)
                 .send()
                 .await
         } else if let (Some(email), Some(key)) = (&self.account_email, &self.api_key) {
-            self.client.post(&url)
+            self.client
+                .post(&url)
                 .header("X-Auth-Email", email)
                 .header("X-Auth-Key", key)
                 .header("Content-Type", "application/json")
@@ -291,7 +326,7 @@ impl DNSProvider for CloudflareProvider {
                 .await
         } else {
             return Err(AppError::Provider(ProviderError::AuthenticationFailed(
-                "未设置 API 凭证".to_string()
+                "未设置 API 凭证".to_string(),
             )));
         };
 
@@ -302,9 +337,10 @@ impl DNSProvider for CloudflareProvider {
         if !response.status().is_success() {
             let status = response.status();
             let error_text = response.text().await.unwrap_or_default();
-            return Err(AppError::Provider(ProviderError::ApiError(
-                format!("HTTP {}: {}", status, error_text)
-            )));
+            return Err(AppError::Provider(ProviderError::ApiError(format!(
+                "HTTP {}: {}",
+                status, error_text
+            ))));
         }
 
         let create_response: CloudflareRecordResponse = response.json().await.map_err(|e| {
@@ -330,13 +366,15 @@ impl DNSProvider for CloudflareProvider {
         );
 
         let response = if let Some(token) = &self.api_token {
-            self.client.delete(&url)
+            self.client
+                .delete(&url)
                 .header("Authorization", format!("Bearer {}", token))
                 .header("Content-Type", "application/json")
                 .send()
                 .await
         } else if let (Some(email), Some(key)) = (&self.account_email, &self.api_key) {
-            self.client.delete(&url)
+            self.client
+                .delete(&url)
                 .header("X-Auth-Email", email)
                 .header("X-Auth-Key", key)
                 .header("Content-Type", "application/json")
@@ -344,7 +382,7 @@ impl DNSProvider for CloudflareProvider {
                 .await
         } else {
             return Err(AppError::Provider(ProviderError::AuthenticationFailed(
-                "未设置 API 凭证".to_string()
+                "未设置 API 凭证".to_string(),
             )));
         };
 
@@ -355,9 +393,10 @@ impl DNSProvider for CloudflareProvider {
         if !response.status().is_success() {
             let status = response.status();
             let error_text = response.text().await.unwrap_or_default();
-            return Err(AppError::Provider(ProviderError::ApiError(
-                format!("HTTP {}: {}", status, error_text)
-            )));
+            return Err(AppError::Provider(ProviderError::ApiError(format!(
+                "HTTP {}: {}",
+                status, error_text
+            ))));
         }
 
         Ok(())
@@ -368,7 +407,8 @@ impl DNSProvider for CloudflareProvider {
         let url = "https://api.cloudflare.com/client/v4/user/tokens/verify";
 
         let response = if let Some(token) = &self.api_token {
-            self.client.get(url)
+            self.client
+                .get(url)
                 .header("Authorization", format!("Bearer {}", token))
                 .send()
                 .await

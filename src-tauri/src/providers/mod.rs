@@ -1,7 +1,7 @@
-pub mod provider_trait;
-pub mod cloudflare;
 pub mod aliyun;
-pub mod tencent;
 pub mod aws;
+pub mod cloudflare;
+pub mod provider_trait;
+pub mod tencent;
 
 pub use provider_trait::*;
