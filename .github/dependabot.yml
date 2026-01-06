@@ -1,0 +1,52 @@
+version: 2
+updates:
+  # GitHub Actions 的依赖更新
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "🔧 CI"
+      include: "scope"
+
+  # Node.js 依赖更新
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    versioning-strategy: increase
+    commit-message:
+      prefix: "⬆️ npm"
+      include: "scope"
+    allow:
+      - dependency-type: "production"
+      - dependency-type: "development"
+    ignore:
+      # 忽略某些包的 major 版本更新
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "tauri"
+        update-types: ["version-update:semver-major"]
+
+  # Rust 依赖更新 (Cargo)
+  - package-ecosystem: "cargo"
+    directory: "/src-tauri"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    versioning-strategy: increase
+    commit-message:
+      prefix: "📦 Cargo"
+      include: "scope"
+    ignore:
+      # 忽略某些包的 major 版本更新
+      - dependency-name: "tauri"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "tokio"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "sqlx"
+        update-types: ["version-update:semver-major"]

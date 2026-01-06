@@ -1,0 +1,48 @@
+# EditorConfig 是跨编辑器和 IDE 的编码风格配置
+# https://editorconfig.org
+
+root = true
+
+# 所有文件的默认设置
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Rust 源代码
+[*.rs]
+indent_style = space
+indent_size = 4
+max_line_length = 100
+
+# TypeScript/JavaScript
+[*.{ts,tsx,js,jsx}]
+indent_style = space
+indent_size = 2
+max_line_length = 100
+
+# JSON/YAML/TOML
+[*.{json,yaml,yml,toml}]
+indent_style = space
+indent_size = 2
+
+# Markdown
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = off
+
+# Shell 脚本
+[*.sh]
+indent_style = space
+indent_size = 2
+
+# SQL
+[*.sql]
+indent_style = space
+indent_size = 2
+
+# HTML/CSS
+[*.{html,css}]
+indent_style = space
+indent_size = 2

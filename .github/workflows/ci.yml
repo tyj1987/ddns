@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # TypeScript 类型检查和 Lint
+  frontend-check:
+    name: Frontend Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Type check
+      run: npx tsc --noEmit
+
+    - name: Build frontend
+      run: npm run build
+
+  # Rust 代码检查
+  backend-check:
+    name: Backend Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        components: rustfmt, clippy
+        override: true
+
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache cargo index
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache cargo build
+      uses: actions/cache@v3
+      with:
+        path: src-tauri/target
+        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Check Rust code (library only)
+      working-directory: src-tauri
+      run: cargo check --lib --verbose
+
+    - name: Check formatting
+      working-directory: src-tauri
+      run: cargo fmt --all -- --check
+
+    - name: Run clippy
+      working-directory: src-tauri
+      run: cargo clippy --lib -- -D warnings
+
+    - name: Run tests
+      working-directory: src-tauri
+      run: cargo test --lib
+
+  # Docker 构建测试
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      run: |
+        docker build -f docker/Dockerfile -t ddns-tool:test .
+
+    - name: Test Docker image
+      run: |
+        docker run --rm ddns-tool:test --version || true

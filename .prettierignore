@@ -1,0 +1,19 @@
+# 依赖目录
+node_modules/
+src-tauri/target/
+
+# 构建产物
+dist/
+build/
+
+# 配置文件
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+Cargo.lock
+
+# 其他
+.vite/
+.tauri/
+*.min.js
+*.min.css

@@ -1,0 +1,47 @@
+# DDNS 工具配置文件示例
+# 将此文件复制为 config/ddns.yml 并根据需要修改
+
+# 域名配置列表
+domains:
+  - name: "example.com"
+    provider: "cloudflare"
+    subdomain: "www"
+    record_type: "A"
+    enabled: true
+    update_interval: 300  # 5分钟
+
+    # 提供商凭证
+    credentials:
+      api_token: "your-cloudflare-api-token"
+
+  # - name: "example.com"
+  #   provider: "aliyun"
+  #   subdomain: "home"
+  #   record_type: "A"
+  #   enabled: true
+  #   update_interval: 600
+  #   credentials:
+  #     access_key_id: "your-access-key-id"
+  #     access_key_secret: "your-access-key-secret"
+
+# 应用设置
+settings:
+  # IP 检测方法: auto, api, dns, interface
+  ip_detection_method: "auto"
+
+  # 默认更新间隔(秒)
+  default_update_interval: 300
+
+  # 日志级别: error, warn, info, debug
+  log_level: "info"
+
+  # 启用通知(需要实现)
+  enable_notifications: false
+
+# 日志配置
+logging:
+  level: "info"
+  file: "/config/ddns.log"
+  max_size: "10M"
+  max_backups: 3
+  max_age: 7  # 天
