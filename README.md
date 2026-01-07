@@ -21,24 +21,6 @@
 
 </div>
 
----
-
-## 📸 预览
-
-### 主界面
-<div align="center">
-  <img src="screenshots/main-ui.png" alt="主界面" width="800">
-</div>
-
-### 域名管理
-<div align="center">
-  <img src="screenshots/domain-management.png" alt="域名管理" width="800">
-</div>
-
-### Docker 部署
-<div align="center">
-  <img src="screenshots/docker-deployment.png" alt="Docker 部署" width="800">
-</div>
 
 ---
 
@@ -65,7 +47,7 @@
     sudo apt-get install libwebkit2gtk-4.1-dev build-essential libayatana-appindicator3-dev
 
     # Fedora/RHEL
-    sudo dnf install webkit2gtk4.1-devel libappindicator-gtk3-devel
+    sudo dnf install webkit2gtk3-devel.x86_64 libappindicator-gtk3-devel
 
     # Arch Linux
     sudo pacman -S webkit2gtk-4.1 libappindicator-gtk3
@@ -74,29 +56,6 @@
   - Windows: [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 
 ### 安装
-
-#### 方法一: 自动安装 (推荐)
-
-```bash
-# 克隆仓库
-git clone https://github.com/tyj1987/ddns.git
-cd ddns
-
-# 运行自动安装脚本 (自动安装所有依赖并编译)
-./install.sh
-```
-
-**自动安装脚本会:**
-- ✓ 自动检测操作系统
-- ✓ 自动安装 Node.js
-- ✓ 自动安装 Rust
-- ✓ 自动安装系统依赖
-- ✓ 自动编译项目
-- ✓ 生成安装包 (DEB/RPM)
-
-详细说明请查看 [INSTALL.md](INSTALL.md)
-
-#### 方法二: 手动安装
 
 ```bash
 # 克隆仓库
