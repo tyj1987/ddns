@@ -60,7 +60,7 @@
 ```bash
 # 克隆仓库
 git clone https://github.com/tyj1987/ddns.git
-cd ddns-tool
+cd ddns
 
 # 安装依赖
 npm install
