@@ -21,24 +21,6 @@
 
 </div>
 
----
-
-## 📸 预览
-
-### 主界面
-<div align="center">
-  <img src="screenshots/main-ui.png" alt="主界面" width="800">
-</div>
-
-### 域名管理
-<div align="center">
-  <img src="screenshots/domain-management.png" alt="域名管理" width="800">
-</div>
-
-### Docker 部署
-<div align="center">
-  <img src="screenshots/docker-deployment.png" alt="Docker 部署" width="800">
-</div>
 
 ---
 
@@ -77,7 +59,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/yourusername/ddns-tool.git
+git clone https://github.com/tyj1987/ddns.git
 cd ddns-tool
 
 # 安装依赖
