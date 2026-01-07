@@ -52,9 +52,9 @@ impl ConfigStore {
             return Ok(None);
         }
 
-        let content = std::fs::read_to_string(&path).map_err(|e| AppError::Io(e))?;
+        let content = std::fs::read_to_string(&path).map_err(AppError::Io)?;
 
-        let config = serde_json::from_str(&content).map_err(|e| AppError::Serialization(e))?;
+        let config = serde_json::from_str(&content).map_err(AppError::Serialization)?;
 
         Ok(Some(config))
     }
@@ -66,9 +66,9 @@ impl ConfigStore {
     {
         let path = self.config_file(name);
         let content =
-            serde_json::to_string_pretty(config).map_err(|e| AppError::Serialization(e))?;
+            serde_json::to_string_pretty(config).map_err(AppError::Serialization)?;
 
-        std::fs::write(&path, content).map_err(|e| AppError::Io(e))?;
+        std::fs::write(&path, content).map_err(AppError::Io)?;
 
         tracing::info!("保存配置: {}", name);
         Ok(())
@@ -79,7 +79,7 @@ impl ConfigStore {
         let path = self.config_file(name);
 
         if path.exists() {
-            std::fs::remove_file(&path).map_err(|e| AppError::Io(e))?;
+            std::fs::remove_file(&path).map_err(AppError::Io)?;
             tracing::info!("删除配置: {}", name);
         }
 
