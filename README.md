@@ -75,10 +75,33 @@
 
 ### 安装
 
+#### 方法一: 自动安装 (推荐)
+
 ```bash
 # 克隆仓库
-git clone https://github.com/yourusername/ddns-tool.git
-cd ddns-tool
+git clone https://github.com/tyj1987/ddns.git
+cd ddns
+
+# 运行自动安装脚本 (自动安装所有依赖并编译)
+./install.sh
+```
+
+**自动安装脚本会:**
+- ✓ 自动检测操作系统
+- ✓ 自动安装 Node.js
+- ✓ 自动安装 Rust
+- ✓ 自动安装系统依赖
+- ✓ 自动编译项目
+- ✓ 生成安装包 (DEB/RPM)
+
+详细说明请查看 [INSTALL.md](INSTALL.md)
+
+#### 方法二: 手动安装
+
+```bash
+# 克隆仓库
+git clone https://github.com/tyj1987/ddns.git
+cd ddns
 
 # 安装依赖
 npm install
