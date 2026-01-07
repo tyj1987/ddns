@@ -1,5 +1,8 @@
 // Prevents additional console window on Windows in release builds
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// 允许未使用的代码 - 这些是为将来功能预留的
+#![allow(dead_code)]
+#![allow(unused_imports)]
 
 mod app_state;
 mod commands;

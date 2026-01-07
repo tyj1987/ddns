@@ -1,7 +1,7 @@
 use crate::storage::Database;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{Layer, Registry};
+use tracing_subscriber::Registry;
 
 /// 日志服务
 pub struct Logger {
