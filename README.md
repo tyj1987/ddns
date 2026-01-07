@@ -59,7 +59,17 @@
 - **Node.js** >= 18.0.0
 - **Rust** >= 1.70
 - **系统依赖**:
-  - Linux: `libwebkit2gtk-4.1-dev build-essential`
+  - Linux:
+    ```bash
+    # Ubuntu/Debian
+    sudo apt-get install libwebkit2gtk-4.1-dev build-essential libayatana-appindicator3-dev
+
+    # Fedora/RHEL
+    sudo dnf install webkit2gtk4.1-devel libappindicator-gtk3-devel
+
+    # Arch Linux
+    sudo pacman -S webkit2gtk-4.1 libappindicator-gtk3
+    ```
   - macOS: Xcode 命令行工具
   - Windows: [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 
