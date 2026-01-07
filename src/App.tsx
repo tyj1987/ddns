@@ -142,9 +142,9 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* 顶部导航栏 */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -153,27 +153,27 @@ function App() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">DDNS 工具</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">DDNS 工具</h1>
             </div>
             <div className="flex items-center space-x-4">
               {/* 调度器状态 */}
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${schedulerRunning ? 'bg-green-500' : 'bg-gray-400'}`} />
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
                   调度器: {schedulerRunning ? '运行中' : '已停止'} ({schedulerTasks} 任务)
                 </span>
                 <button
                   onClick={toggleScheduler}
                   className={`px-3 py-1 text-xs font-medium rounded ${
                     schedulerRunning
-                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                      : 'bg-green-100 text-green-700 hover:bg-green-200'
+                      ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800'
+                      : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800'
                   }`}
                 >
                   {schedulerRunning ? '停止' : '启动'}
                 </button>
               </div>
-              <div className="text-sm text-gray-500">跨平台动态域名解析工具</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">跨平台动态域名解析工具</div>
             </div>
           </div>
         </div>
@@ -182,51 +182,51 @@ function App() {
       {/* 主内容区 */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 欢迎卡片 */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">欢迎使用 DDNS 工具!</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">欢迎使用 DDNS 工具!</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-blue-50 rounded-lg p-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
               <div className="flex items-center mb-2">
-                <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="font-medium text-blue-900">多云支持</span>
+                <span className="font-medium text-blue-900 dark:text-blue-200">多云支持</span>
               </div>
-              <p className="text-sm text-blue-700">支持 Cloudflare、阿里云、腾讯云、AWS Route53</p>
+              <p className="text-sm text-blue-700 dark:text-blue-300">支持 Cloudflare、阿里云、腾讯云、AWS Route53</p>
             </div>
 
-            <div className="bg-green-50 rounded-lg p-4">
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
               <div className="flex items-center mb-2">
-                <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-green-600 dark:text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="font-medium text-green-900">自动更新</span>
+                <span className="font-medium text-green-900 dark:text-green-200">自动更新</span>
               </div>
-              <p className="text-sm text-green-700">IP 变化时自动更新 DNS 记录</p>
+              <p className="text-sm text-green-700 dark:text-green-300">IP 变化时自动更新 DNS 记录</p>
             </div>
 
-            <div className="bg-purple-50 rounded-lg p-4">
+            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
               <div className="flex items-center mb-2">
-                <svg className="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-purple-600 dark:text-purple-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                <span className="font-medium text-purple-900">安全可靠</span>
+                <span className="font-medium text-purple-900 dark:text-purple-200">安全可靠</span>
               </div>
-              <p className="text-sm text-purple-700">加密存储 API 凭证</p>
+              <p className="text-sm text-purple-700 dark:text-purple-300">加密存储 API 凭证</p>
             </div>
           </div>
         </div>
 
         {/* 功能选项卡 */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
               <button
                 onClick={() => setActiveTab('ip')}
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'ip'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 IP 检测
@@ -235,8 +235,8 @@ function App() {
                 onClick={() => setActiveTab('domains')}
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'domains'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 域名管理
@@ -245,8 +245,8 @@ function App() {
                 onClick={() => setActiveTab('logs')}
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'logs'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 日志
@@ -255,8 +255,8 @@ function App() {
                 onClick={() => setActiveTab('settings')}
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'settings'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 设置
@@ -268,7 +268,7 @@ function App() {
           {activeTab === 'ip' && (
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">IP 地址检测</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">IP 地址检测</h3>
                 <div className="flex space-x-2">
                   <button
                     onClick={detectAll}
@@ -282,7 +282,7 @@ function App() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     当前公网 IPv4 地址
                   </label>
                   <div className="flex items-center space-x-3">
@@ -290,7 +290,7 @@ function App() {
                       type="text"
                       readOnly
                       value={ipv4}
-                      className="flex-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border bg-gray-50"
+                      className="flex-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border bg-gray-50 dark:bg-gray-700 dark:text-white"
                     />
                     <button
                       onClick={detectIPv4}
@@ -303,7 +303,7 @@ function App() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     当前公网 IPv6 地址
                   </label>
                   <div className="flex items-center space-x-3">
@@ -311,7 +311,7 @@ function App() {
                       type="text"
                       readOnly
                       value={ipv6}
-                      className="flex-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border bg-gray-50"
+                      className="flex-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border bg-gray-50 dark:bg-gray-700 dark:text-white"
                     />
                     <button
                       onClick={detectIPv6}
@@ -324,7 +324,7 @@ function App() {
                 </div>
               </div>
 
-              <div className="mt-6 p-4 bg-blue-50 rounded-md">
+              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
@@ -332,8 +332,8 @@ function App() {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-blue-800">提示</h3>
-                    <div className="mt-2 text-sm text-blue-700">
+                    <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">提示</h3>
+                    <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
                       <p>IP 检测会自动尝试多个方法 (API、DNS、网络接口),确保高可用性。检测结果会缓存 60 秒。</p>
                     </div>
                   </div>
@@ -346,7 +346,7 @@ function App() {
           {activeTab === 'domains' && (
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-medium text-gray-900">域名管理</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">域名管理</h3>
                 <button
                   onClick={handleAddDomain}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -361,7 +361,7 @@ function App() {
               {domainsLoading ? (
                 <div className="text-center py-12">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  <p className="mt-2 text-gray-500">加载中...</p>
+                  <p className="mt-2 text-gray-500 dark:text-gray-400">加载中...</p>
                 </div>
               ) : (
                 <DomainList
@@ -376,7 +376,7 @@ function App() {
           {/* 日志面板 */}
           {activeTab === 'logs' && (
             <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">系统日志</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">系统日志</h3>
               <LogViewer refreshTrigger={logRefreshTrigger} />
             </div>
           )}

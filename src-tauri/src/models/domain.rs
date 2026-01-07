@@ -1,10 +1,10 @@
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
 /// DNS 记录类型
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
-#[sqlx(type_name = "record_type", rename_all = "uppercase")]
+#[sqlx(type_name = "record_type", rename_all = "UPPERCASE")]
 pub enum RecordType {
     A,
     AAAA,

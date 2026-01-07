@@ -1,11 +1,10 @@
 use crate::app_state::AppState;
-use crate::error::Result;
 
 /// 获取应用设置
 #[tauri::command]
 pub async fn get_settings(
     state: tauri::State<'_, AppState>,
-) -> Result<std::collections::HashMap<String, String>, String> {
+) -> std::result::Result<std::collections::HashMap<String, String>, String> {
     let keys = vec![
         "ip_detection_method",
         "default_update_interval",
@@ -30,7 +29,7 @@ pub async fn get_settings(
 pub async fn update_settings(
     state: tauri::State<'_, AppState>,
     settings: std::collections::HashMap<String, String>,
-) -> Result<(), String> {
+) -> std::result::Result<(), String> {
     for (key, value) in settings {
         state
             .db

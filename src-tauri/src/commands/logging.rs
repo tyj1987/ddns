@@ -1,5 +1,4 @@
 use crate::app_state::AppState;
-use crate::error::Result;
 use crate::models::LogEntry;
 
 /// 获取日志列表
@@ -9,7 +8,7 @@ pub async fn get_logs(
     level: Option<String>,
     limit: Option<i64>,
     offset: Option<i64>,
-) -> Result<Vec<LogEntry>, String> {
+) -> std::result::Result<Vec<LogEntry>, String> {
     let log_level = level.and_then(|l| match l.to_lowercase().as_str() {
         "error" => Some(crate::models::LogLevel::Error),
         "warn" => Some(crate::models::LogLevel::Warn),
@@ -27,6 +26,6 @@ pub async fn get_logs(
 
 /// 清空日志
 #[tauri::command]
-pub async fn clear_logs(state: tauri::State<'_, AppState>) -> Result<(), String> {
+pub async fn clear_logs(state: tauri::State<'_, AppState>) -> std::result::Result<(), String> {
     state.db.clear_logs().await.map_err(|e| e.to_string())
 }

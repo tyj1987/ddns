@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// DNS 记录类型
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "uppercase")]
+#[serde(rename_all = "UPPERCASE")]
 pub enum DNSRecordType {
     A,
     AAAA,
@@ -89,6 +89,15 @@ pub enum ProviderError {
 
     #[error("未知错误: {0}")]
     Unknown(String),
+
+    #[error("解析错误: {0}")]
+    ParseError(String),
+
+    #[error("认证错误: {0}")]
+    Authentication(String),
+
+    #[error("网络错误: {0}")]
+    Network(String),
 }
 
 /// 提供商凭证

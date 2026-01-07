@@ -1,4 +1,4 @@
-use crate::error::{AppError, Result};
+use crate::error::Result;
 use crate::models::Domain;
 use crate::services::{DNSUpdaterService, IPDetectorService};
 use crate::storage::Database;
@@ -79,6 +79,7 @@ impl SchedulerService {
     /// 为特定域名启动调度
     async fn schedule_domain(&self, domain: Domain) -> Result<()> {
         let domain_id = domain.id.clone();
+        let domain_id_for_spawn = domain_id.clone();
         let interval = domain.update_interval as u64;
 
         let db = Arc::clone(&self.db);
@@ -94,7 +95,7 @@ impl SchedulerService {
                 {
                     let is_running = running.read().await;
                     if !*is_running {
-                        tracing::info!("域名 {} 的调度任务已停止", domain_id);
+                        tracing::info!("域名 {} 的调度任务已停止", domain_id_for_spawn);
                         break;
                     }
                 }
@@ -102,14 +103,10 @@ impl SchedulerService {
                 ticker.tick().await;
 
                 // 获取最新的域名配置
-                let domain = match db.get_domain(&domain_id).await {
-                    Ok(Some(d)) => d,
-                    Ok(None) => {
-                        tracing::warn!("域名 {} 不存在，停止调度", domain_id);
-                        break;
-                    }
+                let domain = match db.get_domain(&domain_id_for_spawn).await {
+                    Ok(d) => d,
                     Err(e) => {
-                        tracing::error!("获取域名 {} 失败: {}", domain_id, e);
+                        tracing::error!("获取域名 {} 失败: {}", domain_id_for_spawn, e);
                         continue;
                     }
                 };
@@ -145,20 +142,21 @@ impl SchedulerService {
                 }
 
                 // 更新 DNS
+                let current_ip = domain.current_ip.unwrap_or_else(|| "None".to_string());
                 tracing::info!(
                     "域名 {} IP 变化: {} -> {}, 开始更新 DNS",
                     domain.name,
-                    domain.current_ip.unwrap_or_else(|| "None".to_string()),
+                    current_ip,
                     new_ip
                 );
 
-                if let Err(e) = dns_updater.update_domain(&domain, &new_ip).await {
+                if let Err(e) = dns_updater.update_domain(&domain_id_for_spawn, &new_ip).await {
                     tracing::error!("域名 {} DNS 更新失败: {}", domain.name, e);
 
                     // 记录失败历史
                     let _ = db
                         .add_update_history(crate::models::UpdateHistory::failed(
-                            domain_id.clone(),
+                            domain_id_for_spawn.clone(),
                             e.to_string(),
                         ))
                         .await;
@@ -166,14 +164,13 @@ impl SchedulerService {
                     tracing::info!("域名 {} DNS 更新成功", domain.name);
 
                     // 更新数据库中的 IP
-                    let _ = db.update_domain_ip(&domain_id, &new_ip).await;
+                    let _ = db.update_domain_ip(&domain_id_for_spawn, &new_ip).await;
 
                     // 记录成功历史
-                    let old_ip = domain.current_ip;
                     let _ = db
                         .add_update_history(crate::models::UpdateHistory::success(
-                            domain_id.clone(),
-                            old_ip,
+                            domain_id_for_spawn.clone(),
+                            Some(current_ip),
                             new_ip.clone(),
                         ))
                         .await;
@@ -183,7 +180,7 @@ impl SchedulerService {
                 }
             }
 
-            tracing::info!("域名 {} 的调度任务结束", domain_id);
+            tracing::info!("域名 {} 的调度任务结束", domain_id_for_spawn);
         });
 
         // 保存任务句柄

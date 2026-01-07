@@ -73,8 +73,8 @@ impl AliyunProvider {
         method: &str,
         params: &mut HashMap<String, String>,
     ) -> Result<String> {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
+        
+        
 
         // 公共参数
         params.insert("Format".to_string(), "JSON".to_string());
@@ -192,13 +192,13 @@ impl DNSProvider for AliyunProvider {
 
     async fn initialize(&mut self, credentials: &Credentials) -> Result<()> {
         if let Some(key_id) = credentials.extra.get("access_key_id") {
-            self.access_key_id = Some(key_id.clone());
+            self.access_key_id = Some(key_id.as_str().unwrap_or_default().to_string());
         }
         if let Some(key_secret) = credentials.extra.get("access_key_secret") {
-            self.access_key_secret = Some(key_secret.clone());
+            self.access_key_secret = Some(key_secret.as_str().unwrap_or_default().to_string());
         }
         if let Some(region) = credentials.extra.get("region") {
-            self.region = Some(region.clone());
+            self.region = Some(region.as_str().unwrap_or_default().to_string());
         }
 
         if self.access_key_id.is_none() || self.access_key_secret.is_none() {
@@ -228,7 +228,6 @@ impl DNSProvider for AliyunProvider {
             .map(|r| DNSRecord {
                 id: r.record_id,
                 name: r.rr,
-                #[serde(rename = "type")]
                 record_type: match r.record_type.as_str() {
                     "A" => DNSRecordType::A,
                     "AAAA" => DNSRecordType::AAAA,
@@ -236,8 +235,9 @@ impl DNSProvider for AliyunProvider {
                     _ => DNSRecordType::A,
                 },
                 content: r.value,
-                ttl: Some(r.ttl),
-                proxied: false,
+                ttl: r.ttl as u32,
+                proxied: None,
+                priority: None,
             })
             .collect())
     }
@@ -272,7 +272,9 @@ impl DNSProvider for AliyunProvider {
         Ok(UpdateResult {
             success: true,
             record_id: update_result.record_id,
-            content: new_content.to_string(),
+            old_ip: record.value.clone(),
+            new_ip: new_content.to_string(),
+            message: "更新成功".to_string(),
         })
     }
 
@@ -298,8 +300,9 @@ impl DNSProvider for AliyunProvider {
             name: record.rr,
             record_type,
             content: record.value,
-            ttl: Some(record.ttl),
-            proxied: false,
+            ttl: record.ttl as u32,
+            proxied: None,
+            priority: None,
         })
     }
 

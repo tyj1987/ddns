@@ -26,11 +26,14 @@ impl AppState {
             drop(scheduler_guard);
             self.stop_scheduler().await?;
             let mut scheduler_guard = self.scheduler.write().await;
+            let scheduler = SchedulerService::new(Arc::clone(&self.db));
+            scheduler.start().await.map_err(|e| e.to_string())?;
+            *scheduler_guard = Some(scheduler);
+        } else {
+            let scheduler = SchedulerService::new(Arc::clone(&self.db));
+            scheduler.start().await.map_err(|e| e.to_string())?;
+            *scheduler_guard = Some(scheduler);
         }
-
-        let scheduler = SchedulerService::new(Arc::clone(&self.db));
-        scheduler.start().await.map_err(|e| e.to_string())?;
-        *scheduler_guard = Some(scheduler);
 
         tracing::info!("调度器已启动");
         Ok(())

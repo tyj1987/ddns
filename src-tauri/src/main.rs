@@ -12,6 +12,7 @@ mod storage;
 use app_state::AppState;
 use services::Logger;
 use storage::Database;
+use tauri::Listener;
 
 #[tokio::main]
 async fn main() {
@@ -19,32 +20,32 @@ async fn main() {
     Logger::init().expect("无法初始化日志系统");
 
     // 获取数据库路径
-    let db_path = format!(
-        "{}/ddns/data.db",
-        if cfg!(target_os = "linux") {
-            dirs::home_dir()
-                .map(|p| p.join(".config"))
-                .map(|p| p.to_string_lossy().to_string())
-                .unwrap_or("~/.config".to_string())
-        } else if cfg!(target_os = "macos") {
-            dirs::home_dir()
-                .map(|p| p.join("Library").join("Application Support"))
-                .map(|p| p.to_string_lossy().to_string())
-                .unwrap_or("~/Library/Application Support".to_string())
-        } else {
-            dirs::config_dir()
-                .map(|p| p.to_string_lossy().to_string())
-                .unwrap_or("./config".to_string())
-        }
-    );
+    let config_dir = if cfg!(target_os = "linux") {
+        dirs::home_dir()
+            .map(|p| p.join(".config"))
+            .unwrap_or_else(|| std::path::PathBuf::from("/tmp/config"))
+    } else if cfg!(target_os = "macos") {
+        dirs::home_dir()
+            .map(|p| p.join("Library").join("Application Support"))
+            .unwrap_or_else(|| std::path::PathBuf::from("/tmp/config"))
+    } else {
+        dirs::config_dir()
+            .unwrap_or_else(|| std::path::PathBuf::from("./config"))
+    };
+
+    let db_path = config_dir.join("ddns/data.db");
 
     // 确保数据库目录存在
-    if let Some(parent) = std::path::Path::new(&db_path).parent() {
+    if let Some(parent) = db_path.parent() {
         std::fs::create_dir_all(parent).expect("无法创建数据库目录");
     }
 
-    // 初始化数据库
-    let database_url = format!("sqlite:{}", db_path);
+    // SQLx SQLite 需要使用 file:// URI 格式并指定 mode=rwc
+    // mode=rwc: read-write-create mode
+    let database_url = format!(
+        "file://{}?mode=rwc",
+        db_path.to_str().expect("无效的数据库路径")
+    );
     tracing::info!("使用数据库: {}", database_url);
 
     let db = Database::new(&database_url)

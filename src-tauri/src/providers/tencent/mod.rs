@@ -70,18 +70,21 @@ impl TencentProvider {
 
     /// 构造腾讯云 API 签名
     fn build_signature(&self, req: &TencentRequest) -> String {
+        let nonce = req.nonce.to_string();
+        let timestamp = req.timestamp.to_string();
+
         let params = vec![
-            ("Action", &req.action),
-            ("Nonce", &req.nonce.to_string()),
-            ("Region", &req.region),
-            ("SecretId", &req.secret_id),
-            ("Timestamp", &req.timestamp.to_string()),
-            ("domain", &req.domain.as_deref().unwrap_or("")),
-            ("recordId", &req.record_id.as_deref().unwrap_or("")),
-            ("subDomain", &req.sub_domain.as_deref().unwrap_or("")),
-            ("recordType", &req.record_type.as_deref().unwrap_or("")),
-            ("recordLine", &req.record_line.as_deref().unwrap_or("")),
-            ("value", &req.value.as_deref().unwrap_or("")),
+            ("Action", req.action.as_str()),
+            ("Nonce", nonce.as_str()),
+            ("Region", req.region.as_str()),
+            ("SecretId", req.secret_id.as_str()),
+            ("Timestamp", timestamp.as_str()),
+            ("domain", req.domain.as_deref().unwrap_or("")),
+            ("recordId", req.record_id.as_deref().unwrap_or("")),
+            ("subDomain", req.sub_domain.as_deref().unwrap_or("")),
+            ("recordType", req.record_type.as_deref().unwrap_or("")),
+            ("recordLine", req.record_line.as_deref().unwrap_or("")),
+            ("value", req.value.as_deref().unwrap_or("")),
         ];
 
         // 按字典序排序参数
@@ -121,7 +124,7 @@ impl TencentProvider {
         action: &str,
         params: HashMap<String, String>,
     ) -> Result<serde_json::Value> {
-        let mut req = TencentRequest {
+        let req = TencentRequest {
             secret_id: self.secret_id.clone().unwrap(),
             secret_key: self.secret_key.clone().unwrap(),
             action: action.to_string(),
@@ -132,19 +135,25 @@ impl TencentProvider {
             record_id: params.get("recordId").cloned(),
             sub_domain: params.get("subDomain").cloned(),
             record_type: params.get("recordType").cloned(),
-            record_line: params.get("recordLine").or(Some("默认".to_string())),
+            record_line: params
+                .get("recordLine")
+                .cloned()
+                .or_else(|| Some("默认".to_string())),
             value: params.get("value").cloned(),
         };
 
         let signature = self.build_signature(&req);
 
+        let nonce_str = req.nonce.to_string();
+        let timestamp_str = req.timestamp.to_string();
+
         let mut query_params = vec![
             ("Action", action),
-            ("Nonce", &req.nonce.to_string()),
+            ("Nonce", nonce_str.as_str()),
             ("Region", &req.region),
             ("SecretId", &req.secret_id),
             ("Signature", &signature),
-            ("Timestamp", &req.timestamp.to_string()),
+            ("Timestamp", timestamp_str.as_str()),
         ];
 
         if let Some(domain) = &req.domain {
@@ -223,10 +232,10 @@ impl DNSProvider for TencentProvider {
 
     async fn initialize(&mut self, credentials: &Credentials) -> Result<()> {
         if let Some(secret_id) = credentials.extra.get("secret_id") {
-            self.secret_id = Some(secret_id.clone());
+            self.secret_id = Some(secret_id.as_str().unwrap_or_default().to_string());
         }
         if let Some(secret_key) = credentials.extra.get("secret_key") {
-            self.secret_key = Some(secret_key.clone());
+            self.secret_key = Some(secret_key.as_str().unwrap_or_default().to_string());
         }
 
         if self.secret_id.is_none() || self.secret_key.is_none() {
@@ -262,8 +271,9 @@ impl DNSProvider for TencentProvider {
                         _ => DNSRecordType::A,
                     },
                     content: r.value,
-                    ttl: Some(r.ttl as i64),
-                    proxied: false,
+                    ttl: r.ttl as u32,
+                    proxied: None,
+                    priority: None,
                 })
                 .collect())
         } else {
@@ -300,7 +310,9 @@ impl DNSProvider for TencentProvider {
         Ok(UpdateResult {
             success: true,
             record_id: update_result.record_id,
-            content: new_content.to_string(),
+            old_ip: record.value.clone(),
+            new_ip: new_content.to_string(),
+            message: "更新成功".to_string(),
         })
     }
 
@@ -327,8 +339,9 @@ impl DNSProvider for TencentProvider {
             name: record.name,
             record_type,
             content: record.value,
-            ttl: Some(record.ttl as i64),
-            proxied: false,
+            ttl: record.ttl as u32,
+            proxied: None,
+            priority: None,
         })
     }
 

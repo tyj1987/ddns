@@ -28,17 +28,25 @@ impl IPDetectionMethod for ApiDetectionMethod {
     }
 
     async fn detect_ipv4(&self) -> Result<Option<String>> {
-        // 尝试多个 API
+        // 尝试多个 API（优先使用只返回 IPv4 的 API）
         let apis = vec![
             "https://api.ipify.org",
-            "https://ifconfig.me/ip",
-            "https://icanhazip.com",
             "https://checkip.amazonaws.com",
+            "https://icanhazip.com",
+            "https://ifconfig.me/ip",
         ];
 
         for url in apis {
             match Self::fetch_ip_from_url(url).await {
-                Ok(ip) => return Ok(Some(ip)),
+                Ok(ip) => {
+                    // 验证是否为有效的 IPv4 地址
+                    if Self::is_valid_ipv4(&ip) {
+                        return Ok(Some(ip));
+                    } else {
+                        tracing::warn!("从 {} 返回的不是有效的 IPv4 地址: {}", url, ip);
+                        continue;
+                    }
+                }
                 Err(e) => {
                     tracing::warn!("从 {} 获取 IP 失败: {}", url, e);
                     continue;
@@ -46,7 +54,7 @@ impl IPDetectionMethod for ApiDetectionMethod {
             }
         }
 
-        Err(AppError::IPDetection("所有 API 都失败了".to_string()))
+        Err(AppError::IPDetection("所有 IPv4 API 都失败了".to_string()))
     }
 
     async fn detect_ipv6(&self) -> Result<Option<String>> {
@@ -56,9 +64,12 @@ impl IPDetectionMethod for ApiDetectionMethod {
         for url in apis {
             match Self::fetch_ip_from_url(url).await {
                 Ok(ip) => {
-                    // 验证是否为 IPv6 地址
-                    if ip.contains(':') && !ip.starts_with('[') {
+                    // 验证是否为有效的 IPv6 地址
+                    if Self::is_valid_ipv6(&ip) {
                         return Ok(Some(ip));
+                    } else {
+                        tracing::warn!("从 {} 返回的不是有效的 IPv6 地址: {}", url, ip);
+                        continue;
                     }
                 }
                 Err(e) => {
@@ -73,6 +84,35 @@ impl IPDetectionMethod for ApiDetectionMethod {
 }
 
 impl ApiDetectionMethod {
+    /// 验证是否为有效的 IPv4 地址
+    pub fn is_valid_ipv4(ip: &str) -> bool {
+        let ip = ip.trim();
+        // IPv4 地址不应该包含冒号
+        if ip.contains(':') {
+            return false;
+        }
+        // 简单验证：应该包含 3 个点
+        let parts: Vec<&str> = ip.split('.').collect();
+        if parts.len() != 4 {
+            return false;
+        }
+        // 每个部分应该是数字且在 0-255 范围内
+        parts.iter().all(|part| {
+            part.parse::<u8>().is_ok()
+        })
+    }
+
+    /// 验证是否为有效的 IPv6 地址
+    pub fn is_valid_ipv6(ip: &str) -> bool {
+        let ip = ip.trim();
+        // IPv6 地址应该包含冒号
+        if !ip.contains(':') {
+            return false;
+        }
+        // 简单验证：不应该包含方括号（除非是 URL 格式）
+        !ip.starts_with('[') || ip.ends_with(']')
+    }
+
     async fn fetch_ip_from_url(url: &str) -> Result<String> {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(10))
@@ -140,25 +180,28 @@ impl DnsDetectionMethod {
         // 使用 trust-dns 客户端
         use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
         use trust_dns_resolver::TokioAsyncResolver;
+        
 
-        let resolver =
-            TokioAsyncResolver::tokio(ResolverConfig::default(), ResolverOpts::default()).await?;
+        let resolver = TokioAsyncResolver::tokio(ResolverConfig::default(), ResolverOpts::default());
 
-        let response = if record_type == "A" {
-            resolver.ipv4_lookup(hostname).await
-        } else {
-            resolver.ipv6_lookup(hostname).await
-        };
-
-        match response {
-            Ok(lookup) => {
-                if let Some(addr) = lookup.iter().next() {
-                    Ok(addr.to_string())
-                } else {
-                    Err(AppError::IPDetection("DNS 解析返回空结果".to_string()))
-                }
+        if record_type == "A" {
+            let lookup = resolver.ipv4_lookup(hostname).await.map_err(|e| {
+                AppError::IPDetection(format!("DNS 解析失败: {}", e))
+            })?;
+            if let Some(addr) = lookup.iter().next() {
+                Ok(addr.to_string())
+            } else {
+                Err(AppError::IPDetection("DNS 解析返回空结果".to_string()))
             }
-            Err(e) => Err(AppError::IPDetection(format!("DNS 解析失败: {}", e))),
+        } else {
+            let lookup = resolver.ipv6_lookup(hostname).await.map_err(|e| {
+                AppError::IPDetection(format!("DNS 解析失败: {}", e))
+            })?;
+            if let Some(addr) = lookup.iter().next() {
+                Ok(addr.to_string())
+            } else {
+                Err(AppError::IPDetection("DNS 解析返回空结果".to_string()))
+            }
         }
     }
 }
@@ -273,18 +316,18 @@ impl IPDetectorService {
             if let Some(ip) = result {
                 tracing::info!("成功检测到 IP: {} (使用 {})", ip, method.method_name());
 
+                let ipv4 = if prefer_ipv6 { None } else { Some(ip.clone()) };
+                let ipv6 = if prefer_ipv6 { Some(ip) } else { None };
+
                 let ip_info = IPInfo::new(
-                    if prefer_ipv6 { None } else { Some(ip.clone()) },
-                    if prefer_ipv6 { Some(ip) } else { None },
+                    ipv4.clone(),
+                    ipv6.clone(),
                     method.method_name().to_string(),
                 );
 
                 // 更新缓存
                 let mut cache = self.cache.write().await;
-                cache.update(
-                    if prefer_ipv6 { None } else { Some(ip.clone()) },
-                    if prefer_ipv6 { Some(ip) } else { None },
-                );
+                cache.update(ipv4, ipv6);
 
                 return Ok(ip_info);
             }
@@ -373,5 +416,36 @@ mod tests {
 
         // 清除缓存
         detector.clear_cache().await;
+    }
+
+    #[test]
+    fn test_ipv4_validation() {
+        // 测试有效的 IPv4 地址
+        assert!(ApiDetectionMethod::is_valid_ipv4("192.168.1.1"));
+        assert!(ApiDetectionMethod::is_valid_ipv4("8.8.8.8"));
+        assert!(ApiDetectionMethod::is_valid_ipv4("255.255.255.255"));
+        assert!(ApiDetectionMethod::is_valid_ipv4("0.0.0.0"));
+
+        // 测试 IPv6 地址应该被拒绝
+        assert!(!ApiDetectionMethod::is_valid_ipv4("2001:4860:4860::8888"));
+        assert!(!ApiDetectionMethod::is_valid_ipv4("240e:337:b5:b470:4eaa:10f8:f6af:fdc8"));
+        assert!(!ApiDetectionMethod::is_valid_ipv4("fe80::1"));
+
+        // 测试无效格式
+        assert!(!ApiDetectionMethod::is_valid_ipv4("not.an.ip"));
+        assert!(!ApiDetectionMethod::is_valid_ipv4("256.1.1.1"));
+    }
+
+    #[test]
+    fn test_ipv6_validation() {
+        // 测试有效的 IPv6 地址
+        assert!(ApiDetectionMethod::is_valid_ipv6("2001:4860:4860::8888"));
+        assert!(ApiDetectionMethod::is_valid_ipv6("240e:337:b5:b470:4eaa:10f8:f6af:fdc8"));
+        assert!(ApiDetectionMethod::is_valid_ipv6("fe80::1"));
+        assert!(ApiDetectionMethod::is_valid_ipv6("::1"));
+
+        // 测试 IPv4 地址应该被拒绝
+        assert!(!ApiDetectionMethod::is_valid_ipv6("192.168.1.1"));
+        assert!(!ApiDetectionMethod::is_valid_ipv6("8.8.8.8"));
     }
 }

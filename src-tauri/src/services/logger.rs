@@ -1,4 +1,3 @@
-use crate::models::LogLevel;
 use crate::storage::Database;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;

@@ -1,12 +1,11 @@
 use crate::app_state::AppState;
-use crate::error::{AppError, Result};
 use crate::models::{CreateDomain, UpdateDomain};
 
 /// 获取所有域名
 #[tauri::command]
 pub async fn get_domains(
     state: tauri::State<'_, AppState>,
-) -> Result<Vec<crate::models::Domain>, String> {
+) -> std::result::Result<Vec<crate::models::Domain>, String> {
     state.db.get_domains().await.map_err(|e| e.to_string())
 }
 
@@ -15,7 +14,7 @@ pub async fn get_domains(
 pub async fn add_domain(
     state: tauri::State<'_, AppState>,
     domain: CreateDomain,
-) -> Result<crate::models::Domain, String> {
+) -> std::result::Result<crate::models::Domain, String> {
     state
         .db
         .create_domain(domain)
@@ -29,7 +28,7 @@ pub async fn update_domain(
     state: tauri::State<'_, AppState>,
     id: String,
     updates: UpdateDomain,
-) -> Result<crate::models::Domain, String> {
+) -> std::result::Result<crate::models::Domain, String> {
     state
         .db
         .update_domain(&id, updates)
@@ -39,6 +38,9 @@ pub async fn update_domain(
 
 /// 删除域名
 #[tauri::command]
-pub async fn delete_domain(state: tauri::State<'_, AppState>, id: String) -> Result<(), String> {
+pub async fn delete_domain(
+    state: tauri::State<'_, AppState>,
+    id: String,
+) -> std::result::Result<(), String> {
     state.db.delete_domain(&id).await.map_err(|e| e.to_string())
 }

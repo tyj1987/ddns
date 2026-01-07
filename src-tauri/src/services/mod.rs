@@ -6,4 +6,3 @@ pub mod scheduler;
 pub use dns_updater::*;
 pub use ip_detector::*;
 pub use logger::*;
-pub use scheduler::*;

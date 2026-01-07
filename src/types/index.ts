@@ -56,13 +56,19 @@ export interface LogEntry {
 
 // 应用设置
 export interface AppSettings {
-  theme: 'light' | 'dark';
+  theme: 'light' | 'dark' | 'auto';
   log_level: LogLevel;
   default_update_interval: number;
   ip_detection_method: string;
   enable_notifications: boolean;
   auto_start: boolean;
 }
+
+// 主题类型
+export type ThemeMode = 'light' | 'dark' | 'auto';
+
+// 实际应用的主题（auto 模式下会被解析为 light 或 dark）
+export type AppliedTheme = 'light' | 'dark';
 
 // 域名输入类型(用于创建/编辑)
 export type DomainInput = Omit<Domain, 'id' | 'current_ip' | 'last_updated' | 'created_at' | 'updated_at'>;

@@ -21,7 +21,7 @@ pub enum AppError {
 
     /// DNS 提供商错误
     #[error("DNS 提供商错误: {0}")]
-    Provider(#[from] ProviderError),
+    Provider(#[from] crate::providers::ProviderError),
 
     /// IP 检测错误
     #[error("IP 检测错误: {0}")]
@@ -40,44 +40,5 @@ pub enum AppError {
     Custom(String),
 }
 
-/// DNS 提供商错误
-#[derive(Error, Debug)]
-pub enum ProviderError {
-    /// 认证失败
-    #[error("认证失败: {0}")]
-    AuthenticationFailed(String),
-
-    /// API 错误
-    #[error("API 错误: {0}")]
-    ApiError(String),
-
-    /// 超出速率限制
-    #[error("超出速率限制")]
-    RateLimitExceeded,
-
-    /// 网络错误
-    #[error("网络错误: {0}")]
-    NetworkError(String),
-
-    /// 配置无效
-    #[error("配置无效: {0}")]
-    InvalidConfig(String),
-
-    /// 记录未找到
-    #[error("记录未找到: {0}")]
-    RecordNotFound(String),
-
-    /// 未知错误
-    #[error("未知错误: {0}")]
-    Unknown(String),
-}
-
-/// Tauri 命令的 Result 类型别名
+/// Tauri 命令的 Result 类型别名 (内部使用)
 pub type Result<T> = std::result::Result<T, AppError>;
-
-/// 将 AppError 转换为 Tauri 可接受的 String
-impl From<AppError> for String {
-    fn from(error: AppError) -> Self {
-        error.to_string()
-    }
-}
