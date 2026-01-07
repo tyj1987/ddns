@@ -47,7 +47,7 @@
     sudo apt-get install libwebkit2gtk-4.1-dev build-essential libayatana-appindicator3-dev
 
     # Fedora/RHEL
-    sudo dnf install webkit2gtk4.1-devel libappindicator-gtk3-devel
+    sudo dnf install webkit2gtk3-devel.x86_64 libappindicator-gtk3-devel
 
     # Arch Linux
     sudo pacman -S webkit2gtk-4.1 libappindicator-gtk3
